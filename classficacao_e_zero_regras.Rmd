@@ -1,0 +1,39 @@
+```{r}
+library(tidymodels)
+library(tidyr)
+library(dplyr)
+library(readr)
+df <- data.frame(team.m=rep(c('A', 'B', 'C', 'D'), each=4),
+                 pos.m=rep(c('G', 'F'), times=8),
+                 points=round(runif(16, 4, 20),0))
+
+tab1 <- table(df$pos.m, df$team.m)
+
+df <- df |> mutate(regra = "Dados Caros")
+df$regra[df$points <= 10] <-  "Dados Baratos"
+View(df)
+```
+
+Algoritimo Zero Regras
+```{r}
+notRules <- df
+```
+
+Algoritimo de Classificação
+```{r}
+testeGgplot <- df |> pivot_longer(cols = ends_with("m"))
+ggplot(testeGgplot) + geom_violin(aes(value, name, fill = points))
+
+classificadors <- function(dataBase){
+  if( dataBase["points"] > 12 ){
+    return("Dados Caros")
+  }else{
+    return("Dados Baratos")
+  }
+}
+
+resultadoss <- apply(df, MARGIN = 1, FUN = classificadors)
+acuracias  = sum(resultadoss == df$regra)/nrow(df)  # proporcao das observações que foram classificadas corretamente
+print(acuracias)
+
+```
