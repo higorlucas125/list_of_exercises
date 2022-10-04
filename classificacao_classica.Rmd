@@ -1,0 +1,65 @@
+
+```{r}
+
+here::i_am("classificacao_classica.Rmd")
+library(here)
+library(tidyverse)
+library(tidymodels)
+library(FFTrees)
+library(palmerpenguins)
+
+ dfs <- penguins
+#tnic <- FFTrees::titanic
+str(dfs)
+dfs$species <- as.factor(dfs$species)
+
+
+summary(dfs$species )
+#tnic <- mutate_all(tnic, as_factor)
+
+```
+
+```{r}
+divisao_dados <- initial_split(dfs, prop=0.9)
+dfs_treino <- training(divisao_dados)
+
+preparacao <- recipe(species ~ ., dfs_treino) 
+```
+
+```{r}
+modeloPadrao <- decision_tree( 
+   # cost_complexity = 2, # hiperparametro para o algoritmo preferir modelos (árvores) mais simples
+  #  tree_depth = 2, # profundidade maxima das arvores
+  #  min_n = 20 # numero minimo de exemplos em um no para efetuar um divisao
+  ) |> set_engine("rpart") |> 
+       set_mode("classification")
+
+wf <- workflow(preparacao, modeloPadrao)
+modelo_fitted <- fit(wf, dfs_treino)
+
+dfs_teste <- testing(divisao_dados)
+
+resultados_teste <- predict(modelo_fitted, dfs_teste)
+resultados_teste <- mutate(resultados_teste, species = dfs_teste$species)
+
+resultados_teste |> metrics(species, .pred_class)
+```
+
+```{r}
+
+dfs_treino <- na.omit(dfs_treino)
+
+dtFits <- train(species ~ ., 
+                  data = dfs_treino, 
+                  method = "rpart",
+                  metric = "Prec", # Specifying the custom metric here
+                  tuneLength = 10)
+dtFits
+
+
+library(rpart.plot)
+rpart.plot(dtFits$finalModel, 
+           extra = 4, 
+           type = 4,  
+           box.palette = "RdYlGn")
+```
